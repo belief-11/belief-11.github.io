@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线代码编译器 - 多语言支持</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-code"></i>
+                <h1>在线代码编译器</h1>
+            </div>
+            <div class="header-controls">
+                <button class="theme-toggle" id="themeToggle" title="切换主题">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="help-btn" id="helpBtn" title="使用帮助">
+                    <i class="fas fa-question-circle"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="editor-section">
+                <div class="editor-toolbar">
+                    <div class="language-selector">
+                        <label for="languageSelect">
+                            <i class="fas fa-terminal"></i>
+                            选择语言：
+                        </label>
+                        <select id="languageSelect">
+                            <option value="c">C</option>
+                            <option value="cpp">C++</option>
+                            <option value="python" selected>Python 3</option>
+                            <option value="java">Java</option>
+                            <option value="javascript">JavaScript (Node.js)</option>
+                            <option value="go">Go</option>
+                            <option value="rust">Rust</option>
+                            <option value="csharp">C#</option>
+                        </select>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="btn btn-secondary" id="clearBtn">
+                            <i class="fas fa-eraser"></i>
+                            清空
+                        </button>
+                        <button class="btn btn-secondary" id="formatBtn">
+                            <i class="fas fa-align-left"></i>
+                            格式化
+                        </button>
+                        <button class="btn btn-primary" id="runBtn">
+                            <i class="fas fa-play"></i>
+                            运行代码
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-container">
+                    <div id="editor"></div>
+                </div>
+                <div class="editor-status">
+                    <span class="status-item">
+                        <i class="fas fa-file-code"></i>
+                        <span id="languageLabel">Python 3</span>
+                    </span>
+                    <span class="status-item">
+                        <i class="fas fa-keyboard"></i>
+                        <span id="cursorPosition">行 1, 列 1</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="output-header">
+                    <div class="output-tabs">
+                        <button class="tab-btn active" data-tab="output">
+                            <i class="fas fa-terminal"></i>
+                            输出
+                        </button>
+                        <button class="tab-btn" data-tab="input">
+                            <i class="fas fa-keyboard"></i>
+                            输入
+                        </button>
+                    </div>
+                    <div class="output-actions">
+                        <button class="icon-btn" id="copyOutputBtn" title="复制输出">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="icon-btn" id="clearOutputBtn" title="清空输出">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="output-content">
+                    <div class="tab-content active" id="outputTab">
+                        <div id="output" class="output-area">
+                            <div class="placeholder">
+                                <i class="fas fa-info-circle"></i>
+                                <p>点击"运行代码"按钮执行你的代码</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="inputTab">
+                        <textarea id="input" class="input-area" placeholder="在此输入程序的输入数据（每行一个输入）"></textarea>
+                    </div>
+                </div>
+                <div class="output-status" id="outputStatus">
+                    <span class="status-indicator ready"></span>
+                    <span class="status-text">就绪</span>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 在线代码编译器 | 支持 C、C++、Python、Java 等多种编程语言</p>
+        </footer>
+    </div>
+
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-question-circle"></i> 使用帮助</h2>
+                <button class="close-btn" id="closeHelpBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h3>快速开始</h3>
+                <ol>
+                    <li>选择你想要使用的编程语言</li>
+                    <li>在编辑器中编写你的代码</li>
+                    <li>如果需要输入数据，在"输入"标签页中输入</li>
+                    <li>点击"运行代码"按钮执行程序</li>
+                    <li>在"输出"标签页查看运行结果</li>
+                </ol>
+                <h3>支持的语言</h3>
+                <ul>
+                    <li><strong>C</strong> - 使用 GCC 编译器</li>
+                    <li><strong>C++</strong> - 使用 G++ 编译器</li>
+                    <li><strong>Python 3</strong> - 最新稳定版本</li>
+                    <li><strong>Java</strong> - OpenJDK</li>
+                    <li><strong>JavaScript</strong> - Node.js 运行时</li>
+                    <li><strong>Go</strong> - 官方 Go 编译器</li>
+                    <li><strong>Rust</strong> - Rust 编译器</li>
+                    <li><strong>C#</strong> - .NET 编译器</li>
+                </ul>
+                <h3>快捷键</h3>
+                <ul>
+                    <li><code>Ctrl + Enter</code> - 运行代码</li>
+                    <li><code>Ctrl + S</code> - 保存代码到本地</li>
+                    <li><code>Ctrl + /</code> - 注释/取消注释</li>
+                </ul>
+                <h3>注意事项</h3>
+                <ul>
+                    <li>代码执行时间限制为 10 秒</li>
+                    <li>内存限制为 128 MB</li>
+                    <li>请勿编写恶意代码</li>
+                    <li>输出结果会自动保存到剪贴板</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
