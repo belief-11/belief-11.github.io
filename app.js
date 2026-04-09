@@ -309,7 +309,8 @@ class Program {
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            timeout: 10000
+                            timeout: 10000,
+                            withCredentials: false
                         });
                         
                         const token = response.data.token;
@@ -330,7 +331,8 @@ class Program {
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            timeout: 20000
+                            timeout: 20000,
+                            withCredentials: false
                         });
                         result = this.handleWandboxResult(response.data);
                     } else if (service.name === 'Piston') {
@@ -348,7 +350,8 @@ class Program {
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            timeout: 20000
+                            timeout: 20000,
+                            withCredentials: false
                         });
                         result = this.handlePistonResult(response.data);
                     }
@@ -448,7 +451,8 @@ class Program {
         for (let i = 0; i < maxRetries; i++) {
             try {
                 const response = await axios.get(url, {
-                    timeout: 5000
+                    timeout: 5000,
+                    withCredentials: false
                 });
                 
                 const data = response.data;
