@@ -8,17 +8,17 @@ class CodeCompiler {
         this.apiServices = [
             {
                 name: 'Judge0',
-                url: 'https://ce.judge0.com/submissions/',
+                url: 'https://cors-anywhere.herokuapp.com/https://ce.judge0.com/submissions/',
                 active: true
             },
             {
                 name: 'Wandbox',
-                url: 'https://wandbox.org/api/compile.json',
+                url: 'https://cors-anywhere.herokuapp.com/https://wandbox.org/api/compile.json',
                 active: true
             },
             {
                 name: 'Piston',
-                url: 'https://emkc.org/api/v2/piston/execute',
+                url: 'https://cors-anywhere.herokuapp.com/https://emkc.org/api/v2/piston/execute',
                 active: true
             }
         ];
@@ -444,7 +444,7 @@ class Program {
     }
     
     async handleJudge0Result(token) {
-        const url = `https://ce.judge0.com/submissions/${token}?base64_encoded=false`;
+        const url = `https://cors-anywhere.herokuapp.com/https://ce.judge0.com/submissions/${token}?base64_encoded=false`;
         const maxRetries = 30;
         const retryInterval = 1000;
         
