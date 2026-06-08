@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy LVR - 便捷版本控制工具</title>
+    <meta name="description" content="轻量化本地版本控制，无需 Git，一键管理项目版本。支持时间线回滚、差异对比、AI 编码助手集成。">
+    <meta name="keywords" content="版本控制,版本管理,本地备份,回滚,diff,CLI,AI集成,vcsnap">
+    <meta property="og:title" content="Easy LVR - 便捷版本控制工具">
+    <meta property="og:description" content="轻量化本地版本控制，无需 Git，一键管理项目版本。">
+    <meta property="og:type" content="website">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4A9EC7;
+            --primary-light: #6BB8D9;
+            --primary-dark: #357A9E;
+            --primary-glow: rgba(74, 158, 199, 0.3);
+            --primary-subtle: rgba(74, 158, 199, 0.08);
+            --bg-deep: #060A14;
+            --bg-primary: #0C1220;
+            --bg-secondary: #121B2E;
+            --bg-tertiary: #1A2540;
+            --bg-card: #14203A;
+            --bg-card-hover: #1A2848;
+            --text-primary: #F0F4FA;
+            --text-secondary: #8B9DC3;
+            --text-tertiary: #5A6E8F;
+            --success: #34D399;
+            --warning: #FBBF24;
+            --error: #F87171;
+            --info: #60A5FA;
+            --accent-purple: #A78BFA;
+            --accent-pink: #F472B6;
+            --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+            --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem;
+            --space-10: 2.5rem; --space-12: 3rem; --space-16: 4rem;
+            --space-20: 5rem; --space-24: 6rem;
+            --radius-sm: 0.375rem; --radius-md: 0.5rem; --radius-lg: 0.75rem;
+            --radius-xl: 1rem; --radius-2xl: 1.5rem; --radius-full: 9999px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.5);
+            --shadow-xl: 0 20px 40px rgba(0,0,0,0.6);
+            --shadow-glow: 0 0 40px var(--primary-glow);
+            --duration-fast: 150ms; --duration-normal: 300ms; --duration-slow: 500ms;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        body {
+            font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        .mono { font-family: 'JetBrains Mono', 'Cascadia Code', monospace; }
+        a { color: inherit; text-decoration: none; }
+        img { max-width: 100%; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 var(--space-6); }
+
+        .section-label {
+            display: inline-flex; align-items: center; gap: var(--space-2);
+            font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em;
+            text-transform: uppercase; color: var(--primary);
+            background: var(--primary-subtle); border: 1px solid rgba(74, 158, 199, 0.2);
+            padding: var(--space-2) var(--space-4); border-radius: var(--radius-full);
+            margin-bottom: var(--space-6);
+        }
+        .section-label svg { width: 14px; height: 14px; }
+
+        .section-title {
+            font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800;
+            line-height: 1.2; letter-spacing: -0.02em; margin-bottom: var(--space-4);
+        }
+        .section-desc {
+            font-size: 1.1rem; color: var(--text-secondary);
+            max-width: 600px; line-height: 1.7;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary-light), var(--primary), var(--accent-purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        /* ============ Background ============ */
+        .bg-grid {
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(74, 158, 199, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74, 158, 199, 0.025) 1px, transparent 1px);
+            background-size: 80px 80px;
+            pointer-events: none; z-index: 0;
+        }
+        .bg-glow {
+            position: fixed; border-radius: 50%; filter: blur(150px);
+            opacity: 0.12; pointer-events: none; z-index: 0;
+        }
+        .bg-glow-1 { width: 700px; height: 700px; top: -250px; right: -150px; background: var(--primary); }
+        .bg-glow-2 { width: 500px; height: 500px; bottom: -150px; left: -100px; background: #7c3aed; }
+        .bg-glow-3 { width: 400px; height: 400px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--accent-pink); opacity: 0.06; }
+
+        /* ============ Nav ============ */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            padding: var(--space-3) 0;
+            transition: all var(--duration-normal);
+        }
+        .nav.scrolled {
+            background: rgba(6, 10, 20, 0.88);
+            backdrop-filter: blur(24px) saturate(1.2);
+            border-bottom: 1px solid rgba(74, 158, 199, 0.08);
+        }
+        .nav-inner {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 1200px; margin: 0 auto; padding: 0 var(--space-6);
+        }
+        .nav-brand { display: flex; align-items: center; gap: var(--space-3); }
+        .nav-logo {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+            border-radius: var(--radius-lg); display: flex; align-items: center;
+            justify-content: center; font-weight: 800; font-size: 1rem; color: white;
+            position: relative; overflow: hidden;
+            animation: logo-breathe 4s ease-in-out infinite;
+        }
+        @keyframes logo-breathe {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(74, 158, 199, 0); }
+            50% { box-shadow: 0 0 16px 2px rgba(74, 158, 199, 0.25); }
+        }
+        .nav-logo::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.2));
+        }
+        .nav-brand-text { font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; }
+        .nav-brand-text span { color: var(--text-tertiary); font-weight: 400; font-size: 0.85rem; margin-left: var(--space-1); }
+
+        .nav-links { display: flex; align-items: center; gap: var(--space-6); }
+        .nav-links a {
+            font-size: 0.88rem; font-weight: 500; color: var(--text-secondary);
+            transition: color var(--duration-fast); position: relative;
+        }
+        .nav-links a:hover { color: var(--text-primary); }
+        .nav-links a::after {
+            content: ''; position: absolute; bottom: -4px; left: 0;
+            width: 0; height: 2px; background: var(--primary);
+            transition: width var(--duration-normal) var(--ease-out);
+        }
+        .nav-links a:hover::after { width: 100%; }
+
+        .nav-cta {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 16px;
+            background: transparent;
+            color: var(--primary-light);
+            font-weight: 600;
+            font-size: 0.78rem;
+            border-radius: var(--radius-full);
+            border: 1px solid rgba(74, 158, 199, 0.4);
+            cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-out);
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.02em;
+        }
+        .nav-cta::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(74,158,199,0.15), rgba(167,139,250,0.1));
+            opacity: 0; transition: opacity var(--duration-normal);
+        }
+        .nav-cta:hover {
+            border-color: var(--primary);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 0 20px rgba(74,158,199,0.2), inset 0 0 20px rgba(74,158,199,0.05);
+        }
+        .nav-cta:hover::before { opacity: 1; }
+        .nav-cta svg { width: 13px; height: 13px; transition: transform var(--duration-normal) var(--ease-spring); flex-shrink: 0; position: relative; z-index: 1; }
+        .nav-cta:hover svg { transform: translateY(2px); }
+        .nav-cta span { position: relative; z-index: 1; }
+
+        /* Language toggle */
+        .lang-toggle {
+            display: inline-flex; align-items: center; gap: 0;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius-full); padding: 2px; cursor: pointer;
+            transition: all var(--duration-fast);
+        }
+        .lang-toggle:hover { border-color: rgba(74, 158, 199, 0.3); background: rgba(74,158,199,0.06); }
+        .lang-btn {
+            padding: var(--space-1) var(--space-3); border: none; background: none;
+            color: var(--text-tertiary); font-size: 0.78rem; font-weight: 600;
+            border-radius: var(--radius-full); cursor: pointer; transition: all var(--duration-fast);
+            font-family: inherit;
+        }
+        .lang-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+            color: white;
+            box-shadow: 0 2px 8px rgba(74,158,199,0.3);
+        }
+
+        .mobile-toggle { display: none; background: none; border: none; color: var(--text-primary); cursor: pointer; padding: var(--space-2); }
+        .mobile-toggle svg { width: 24px; height: 24px; }
+
+        /* ============ Hero ============ */
+        .hero {
+            position: relative; min-height: 100vh; display: flex; align-items: center;
+            padding: var(--space-24) 0 var(--space-16); overflow: hidden;
+        }
+
+        /* Aurora effect behind hero */
+        .hero-aurora {
+            position: absolute; top: 0; left: 0; right: 0; height: 80%;
+            background: linear-gradient(180deg,
+                rgba(74, 158, 199, 0.06) 0%,
+                rgba(167, 139, 250, 0.04) 30%,
+                rgba(244, 114, 182, 0.03) 50%,
+                transparent 100%
+            );
+            filter: blur(40px);
+            pointer-events: none; z-index: 0;
+            animation: aurora-shift 12s ease-in-out infinite alternate;
+        }
+        @keyframes aurora-shift {
+            0% { opacity: 0.8; transform: translateY(0) scaleX(1); }
+            50% { opacity: 1; transform: translateY(-20px) scaleX(1.05); }
+            100% { opacity: 0.8; transform: translateY(10px) scaleX(0.98); }
+        }
+
+        /* Glitch-style decorative line */
+        .hero-deco-line {
+            position: absolute; top: 20%; left: -10%; width: 120%;
+            height: 1px; background: linear-gradient(90deg,
+                transparent, rgba(74, 158, 199, 0.15), rgba(167, 139, 250, 0.1), transparent
+            );
+            pointer-events: none; z-index: 0;
+            animation: deco-drift 20s linear infinite;
+        }
+        .hero-deco-line:nth-child(2) { top: 75%; animation-duration: 25s; animation-direction: reverse; opacity: 0.6; }
+        @keyframes deco-drift {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(60px); }
+        }
+
+        .hero-content { position: relative; z-index: 1; text-align: center; max-width: 900px; margin: 0 auto; }
+
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: var(--space-2);
+            background: var(--primary-subtle); border: 1px solid rgba(74, 158, 199, 0.15);
+            color: var(--primary); font-size: 0.85rem; font-weight: 500;
+            padding: var(--space-2) var(--space-4); border-radius: var(--radius-full);
+            margin-bottom: var(--space-8); animation: fadeUp 0.8s var(--ease-out) both;
+        }
+        .hero-badge-dot {
+            width: 6px; height: 6px; background: var(--success); border-radius: 50%;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 7vw, 4.5rem); font-weight: 900;
+            line-height: 1.05; letter-spacing: -0.03em;
+            margin-bottom: var(--space-6);
+            animation: fadeUp 0.8s var(--ease-out) 0.1s both;
+        }
+
+        /* Creative: animated gradient stroke on hero subtitle */
+        .hero-accent {
+            position: relative;
+            display: inline-block;
+        }
+        .hero-accent::after {
+            content: '';
+            position: absolute; bottom: -4px; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent-purple), var(--accent-pink), var(--primary));
+            background-size: 200% 100%;
+            border-radius: 2px;
+            animation: gradient-flow 4s linear infinite;
+        }
+        @keyframes gradient-flow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        .hero-desc {
+            font-size: clamp(1.05rem, 2vw, 1.25rem); color: var(--text-secondary);
+            max-width: 620px; margin: 0 auto var(--space-10); line-height: 1.7;
+            animation: fadeUp 0.8s var(--ease-out) 0.2s both;
+        }
+
+        .hero-actions {
+            display: flex; flex-wrap: wrap; gap: var(--space-4);
+            justify-content: center; animation: fadeUp 0.8s var(--ease-out) 0.3s both;
+        }
+
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: var(--space-2);
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; font-weight: 700; font-size: 1rem;
+            border-radius: var(--radius-xl); border: none; cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-out);
+            position: relative; overflow: hidden;
+            white-space: nowrap;
+        }
+        .btn-primary::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.12));
+            opacity: 0; transition: opacity var(--duration-normal);
+        }
+        .btn-primary::after {
+            content: ''; position: absolute; top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255,255,255,0.08), transparent, rgba(167,139,250,0.06), transparent);
+            animation: btn-spin 6s linear infinite;
+            opacity: 0; transition: opacity var(--duration-normal);
+        }
+        @keyframes btn-spin { to { transform: rotate(360deg); } }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--primary-glow), 0 0 60px rgba(74,158,199,0.12); }
+        .btn-primary:hover::before { opacity: 1; }
+        .btn-primary:hover::after { opacity: 1; }
+        .btn-primary svg { width: 18px; height: 18px; flex-shrink: 0; position: relative; z-index: 1; }
+        .btn-primary span { position: relative; z-index: 1; }
+
+        .btn-secondary {
+            display: inline-flex; align-items: center; gap: var(--space-2);
+            padding: 14px 28px;
+            background: rgba(255,255,255,0.04); color: var(--text-primary);
+            font-weight: 600; font-size: 1rem; border-radius: var(--radius-xl);
+            border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-out);
+            white-space: nowrap;
+            position: relative; overflow: hidden;
+        }
+        .btn-secondary::before {
+            content: ''; position: absolute; top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+            transition: left 0.6s var(--ease-out);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(74,158,199,0.3); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(74,158,199,0.08); }
+        .btn-secondary:hover::before { left: 100%; }
+        .btn-secondary svg { width: 18px; height: 18px; flex-shrink: 0; position: relative; z-index: 1; }
+        .btn-secondary span { position: relative; z-index: 1; }
+
+        /* Hero mockup */
+        .hero-visual { margin-top: var(--space-16); position: relative; animation: fadeUp 0.8s var(--ease-out) 0.4s both; }
+        .hero-mockup {
+            background: var(--bg-secondary); border: 1px solid rgba(74, 158, 199, 0.12);
+            border-radius: var(--radius-2xl); overflow: hidden;
+            box-shadow: var(--shadow-xl), 0 0 100px rgba(74, 158, 199, 0.08);
+            max-width: 960px; margin: 0 auto;
+        }
+        /* Creative: floating border glow on mockup */
+        .hero-mockup::before {
+            content: ''; position: absolute; inset: -1px;
+            border-radius: inherit; z-index: -1;
+            background: conic-gradient(from var(--mockup-angle, 0deg),
+                transparent 0%, var(--primary) 10%, transparent 20%,
+                var(--accent-purple) 40%, transparent 50%,
+                var(--accent-pink) 70%, transparent 80%, var(--primary) 90%, transparent 100%
+            );
+            opacity: 0.15;
+            animation: rotate-border 8s linear infinite;
+        }
+        @keyframes rotate-border {
+            to { --mockup-angle: 360deg; }
+        }
+        @property --mockup-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+
+        .mockup-titlebar {
+            display: flex; align-items: center; gap: var(--space-3);
+            padding: var(--space-3) var(--space-4); background: var(--bg-tertiary);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .mockup-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .mockup-dot-red { background: #FF5F57; }
+        .mockup-dot-yellow { background: #FFBD2E; }
+        .mockup-dot-green { background: #28CA41; }
+        .mockup-title-text { flex: 1; text-align: center; font-size: 0.8rem; color: var(--text-tertiary); font-weight: 500; }
+
+        .mockup-body { display: flex; min-height: 360px; }
+        .mockup-sidebar {
+            width: 220px; background: var(--bg-primary);
+            border-right: 1px solid rgba(255,255,255,0.05); padding: var(--space-4);
+        }
+        .mockup-sidebar-title { font-size: 0.7rem; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-3); }
+        .mockup-project-item {
+            display: flex; align-items: center; gap: var(--space-2);
+            padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+            font-size: 0.8rem; color: var(--text-secondary); margin-bottom: var(--space-1);
+        }
+        .mockup-project-item.active { background: var(--primary-subtle); color: var(--primary); border: 1px solid rgba(74, 158, 199, 0.2); }
+        .mockup-project-item .folder-icon { width: 16px; height: 16px; opacity: 0.6; }
+
+        .mockup-main { flex: 1; padding: var(--space-6); }
+        .mockup-toolbar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6); }
+        .mockup-commit-btn {
+            display: inline-flex; align-items: center; gap: var(--space-2);
+            padding: var(--space-2) var(--space-4); background: var(--primary);
+            color: white; font-size: 0.75rem; font-weight: 600;
+            border-radius: var(--radius-md); animation: commit-pulse 3s ease-in-out infinite;
+        }
+        @keyframes commit-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--primary-glow); }
+            50% { box-shadow: 0 0 0 8px transparent; }
+        }
+        .mockup-project-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+
+        .mockup-timeline { position: relative; padding-left: var(--space-8); }
+        .mockup-timeline-line {
+            position: absolute; left: 7px; top: 8px; bottom: 8px; width: 2px;
+            background: linear-gradient(to bottom, var(--primary), rgba(74,158,199,0.2));
+            border-radius: 1px;
+        }
+        .mockup-version-card {
+            position: relative; background: var(--bg-tertiary);
+            border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-lg);
+            padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3);
+        }
+        .mockup-version-card::before {
+            content: ''; position: absolute; left: -25px; top: 50%;
+            transform: translateY(-50%); width: 10px; height: 10px;
+            border-radius: 50%; background: var(--primary);
+            border: 2px solid var(--bg-primary); box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+        .mockup-version-card.current::before { background: var(--success); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.3); }
+        .mockup-ver-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-1); }
+        .mockup-ver-name { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+        .mockup-ver-time { font-size: 0.65rem; color: var(--text-tertiary); }
+        .mockup-ver-comment { font-size: 0.7rem; color: var(--text-secondary); }
+        .mockup-ver-changes { display: flex; gap: var(--space-3); margin-top: var(--space-2); }
+        .mockup-change { font-size: 0.65rem; font-weight: 500; }
+        .mockup-change-add { color: var(--success); }
+        .mockup-change-mod { color: var(--warning); }
+        .mockup-change-del { color: var(--error); }
+
+        /* ============ Features ============ */
+        .features { position: relative; z-index: 1; padding: var(--space-24) 0; }
+        .features-header { text-align: center; margin-bottom: var(--space-16); }
+        .features-header .section-desc { margin: 0 auto; }
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-6); }
+
+        .feature-card {
+            background: linear-gradient(165deg, var(--bg-card), rgba(20, 32, 58, 0.6));
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: var(--radius-xl); padding: var(--space-8);
+            transition: all var(--duration-normal) var(--ease-out);
+            position: relative; overflow: hidden;
+        }
+        /* Creative: diagonal glow on hover */
+        .feature-card::before {
+            content: ''; position: absolute; top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle at 30% 30%, var(--primary-glow), transparent 60%);
+            opacity: 0; transition: opacity var(--duration-slow);
+            pointer-events: none;
+        }
+        .feature-card::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), var(--accent-purple), transparent);
+            opacity: 0; transition: opacity var(--duration-normal);
+        }
+        .feature-card:hover { border-color: rgba(74, 158, 199, 0.15); transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+        .feature-card:hover::before { opacity: 0.15; }
+        .feature-card:hover::after { opacity: 1; }
+
+        .feature-icon {
+            width: 52px; height: 52px; border-radius: var(--radius-lg);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: var(--space-5); position: relative;
+        }
+        .feature-icon svg { width: 24px; height: 24px; position: relative; z-index: 1; }
+        .feature-icon.snapshot { background: linear-gradient(135deg, rgba(74,158,199,0.18), rgba(74,158,199,0.06)); color: var(--primary); }
+        .feature-icon.timeline { background: linear-gradient(135deg, rgba(52,211,153,0.18), rgba(52,211,153,0.06)); color: var(--success); }
+        .feature-icon.diff { background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(251,191,36,0.06)); color: var(--warning); }
+        .feature-icon.multi { background: linear-gradient(135deg, rgba(167,139,250,0.18), rgba(167,139,250,0.06)); color: var(--accent-purple); }
+        .feature-icon.cli { background: linear-gradient(135deg, rgba(96,165,250,0.18), rgba(96,165,250,0.06)); color: var(--info); }
+        .feature-icon.ai { background: linear-gradient(135deg, rgba(248,113,113,0.18), rgba(248,113,113,0.06)); color: #f87171; }
+
+        .feature-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: var(--space-2); letter-spacing: -0.01em; }
+        .feature-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.65; }
+
+        /* ============ CLI ============ */
+        .cli-section { position: relative; z-index: 1; padding: var(--space-24) 0; }
+        .cli-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-12); align-items: center; }
+        .cli-info { max-width: 500px; }
+
+        .cli-terminal {
+            background: #0D1117; border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-xl);
+        }
+        .cli-terminal-bar {
+            display: flex; align-items: center; gap: var(--space-2);
+            padding: var(--space-3) var(--space-4); background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .cli-terminal-title { flex: 1; text-align: center; font-size: 0.75rem; color: var(--text-tertiary); font-weight: 500; }
+        .cli-terminal-body {
+            padding: var(--space-6) var(--space-6) var(--space-6) var(--space-8);
+            font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.8;
+        }
+        .cli-line { display: block; margin-bottom: var(--space-1); opacity: 0; animation: typeIn 0.4s var(--ease-out) both; }
+        .cli-line:nth-child(1) { animation-delay: 0.3s; }
+        .cli-line:nth-child(2) { animation-delay: 0.6s; }
+        .cli-line:nth-child(3) { animation-delay: 0.9s; }
+        .cli-line:nth-child(4) { animation-delay: 1.2s; }
+        .cli-line:nth-child(5) { animation-delay: 1.5s; }
+        .cli-line:nth-child(6) { animation-delay: 1.8s; }
+        .cli-line:nth-child(7) { animation-delay: 2.1s; }
+        .cli-line:nth-child(8) { animation-delay: 2.4s; }
+        .cli-line:nth-child(9) { animation-delay: 2.7s; }
+        .cli-line:nth-child(10) { animation-delay: 3.0s; }
+        @keyframes typeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .cli-prompt { color: var(--success); }
+        .cli-cmd { color: var(--primary-light); }
+        .cli-flag { color: var(--warning); }
+        .cli-output { color: var(--text-secondary); }
+        .cli-success { color: var(--success); }
+        .cli-key { color: var(--primary); }
+        .cli-value { color: var(--text-primary); }
+
+        /* ============ AI ============ */
+        .ai-section { position: relative; z-index: 1; padding: var(--space-24) 0; }
+        .ai-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-12); align-items: center; }
+        .ai-visual { position: relative; }
+        .ai-card {
+            background: var(--bg-card); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: var(--radius-xl); padding: 3px; position: relative; overflow: hidden;
+        }
+        .ai-card::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: conic-gradient(from 0deg, transparent, var(--primary-glow), transparent, rgba(167,139,250,0.15), transparent);
+            animation: rotate-glow 8s linear infinite; opacity: 0.5;
+        }
+        @keyframes rotate-glow { to { transform: rotate(360deg); } }
+        .ai-card-inner {
+            position: relative; z-index: 1; background: var(--bg-card);
+            border-radius: calc(var(--radius-xl) - 2px); padding: var(--space-6);
+        }
+        .ai-card-header { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5); }
+        .ai-card-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+            border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;
+        }
+        .ai-card-icon svg { width: 20px; height: 20px; color: white; }
+        .ai-card-title { font-weight: 700; font-size: 1rem; }
+        .ai-card-badge {
+            font-size: 0.7rem; font-weight: 600; color: var(--primary);
+            background: var(--primary-subtle); padding: 2px 8px;
+            border-radius: var(--radius-full); margin-left: auto;
+        }
+        .ai-integrations { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-5); }
+        .ai-integration-tag {
+            display: inline-flex; align-items: center; gap: var(--space-2);
+            padding: var(--space-2) var(--space-3); background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-md);
+            font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;
+        }
+        .ai-integration-tag svg { width: 14px; height: 14px; opacity: 0.7; }
+
+        /* ============ How ============ */
+        .how-section { position: relative; z-index: 1; padding: var(--space-24) 0; }
+        .how-header { text-align: center; margin-bottom: var(--space-16); }
+        .how-header .section-desc { margin: 0 auto; }
+        .how-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8); position: relative; }
+        .how-steps::before {
+            content: ''; position: absolute; top: 40px;
+            left: calc(16.67% + 20px); right: calc(16.67% + 20px); height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--accent-purple)); opacity: 0.3;
+        }
+        .how-step { text-align: center; position: relative; }
+        .how-step-number {
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border: 2px solid var(--primary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1.1rem; color: var(--primary);
+            margin: 0 auto var(--space-5); position: relative; z-index: 1;
+            box-shadow: 0 0 20px rgba(74, 158, 199, 0.15);
+        }
+        .how-step h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: var(--space-2); }
+        .how-step p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; max-width: 280px; margin: 0 auto; }
+
+        /* ============ Download ============ */
+        .download-section { position: relative; z-index: 1; padding: var(--space-24) 0; }
+        .download-card {
+            background: linear-gradient(165deg, var(--bg-secondary), var(--bg-tertiary));
+            border: 1px solid rgba(74, 158, 199, 0.12); border-radius: var(--radius-2xl);
+            padding: var(--space-16) var(--space-12); text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .download-card::before {
+            content: ''; position: absolute; top: -100px; right: -100px;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, var(--primary-glow), transparent 70%);
+            pointer-events: none;
+        }
+        .download-card::after {
+            content: ''; position: absolute; bottom: -100px; left: -100px;
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(167,139,250,0.1), transparent 70%);
+            pointer-events: none;
+        }
+        .download-card > * { position: relative; z-index: 1; }
+        .download-card h2 {
+            font-size: clamp(2rem, 4vw, 2.5rem); font-weight: 800;
+            margin-bottom: var(--space-4); letter-spacing: -0.02em;
+        }
+        .download-card p { font-size: 1.1rem; color: var(--text-secondary); max-width: 500px; margin: 0 auto var(--space-8); line-height: 1.7; }
+
+        .download-btn {
+            display: inline-flex; align-items: center; gap: var(--space-3);
+            padding: 16px 36px;
+            color: white; font-weight: 700; font-size: 1.05rem;
+            border-radius: var(--radius-xl); border: none; cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-out);
+            position: relative; overflow: hidden;
+            white-space: nowrap;
+            background: linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+                        linear-gradient(135deg, var(--primary), var(--accent-purple), var(--accent-pink), var(--primary)) border-box;
+            border: 2px solid transparent;
+            animation: download-breathe 3s ease-in-out infinite;
+        }
+        @keyframes download-breathe {
+            0%, 100% { box-shadow: 0 0 20px rgba(74,158,199,0.1), 0 0 60px rgba(74,158,199,0.05); }
+            50% { box-shadow: 0 0 30px rgba(74,158,199,0.25), 0 0 80px rgba(74,158,199,0.1); }
+        }
+        .download-btn::before {
+            content: ''; position: absolute; inset: 2px;
+            background: linear-gradient(135deg, rgba(74,158,199,0.08), rgba(167,139,250,0.06));
+            border-radius: calc(var(--radius-xl) - 2px);
+            opacity: 0; transition: opacity var(--duration-normal);
+        }
+        .download-btn::after {
+            content: ''; position: absolute; top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(74,158,199,0.08), transparent, rgba(167,139,250,0.06), transparent);
+            animation: dl-spin 8s linear infinite;
+        }
+        @keyframes dl-spin { to { transform: rotate(360deg); } }
+        .download-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 40px var(--primary-glow), 0 0 80px rgba(74,158,199,0.15); }
+        .download-btn:hover::before { opacity: 1; }
+        .download-btn svg { width: 22px; height: 22px; flex-shrink: 0; position: relative; z-index: 1; }
+        .download-btn span { position: relative; z-index: 1; }
+
+        .download-meta {
+            display: flex; align-items: center; justify-content: center;
+            gap: var(--space-6); margin-top: var(--space-6);
+            font-size: 0.85rem; color: var(--text-tertiary);
+            flex-wrap: wrap;
+        }
+        .download-meta span { display: flex; align-items: center; gap: var(--space-2); }
+        .download-meta svg { width: 14px; height: 14px; }
+
+        /* ============ Footer ============ */
+        .footer {
+            position: relative; z-index: 1;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            padding: var(--space-12) 0 var(--space-8);
+        }
+        .footer-inner {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 1200px; margin: 0 auto; padding: 0 var(--space-6);
+        }
+        .footer-brand { display: flex; align-items: center; gap: var(--space-3); }
+        .footer-brand-text { font-weight: 600; font-size: 1rem; }
+        .footer-links { display: flex; gap: var(--space-6); }
+        .footer-links a { font-size: 0.85rem; color: var(--text-tertiary); transition: color var(--duration-fast); }
+        .footer-links a:hover { color: var(--primary); }
+        .footer-copy {
+            font-size: 0.8rem; color: var(--text-tertiary); text-align: center;
+            margin-top: var(--space-8); padding-top: var(--space-6);
+            border-top: 1px solid rgba(255,255,255,0.03);
+        }
+
+        /* ============ Animations ============ */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-on-scroll { opacity: 0; transform: translateY(30px); transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out); }
+        .animate-on-scroll.visible { opacity: 1; transform: translateY(0); }
+
+        /* ============ Responsive ============ */
+        @media (max-width: 1024px) {
+            .cli-grid, .ai-grid { grid-template-columns: 1fr; gap: var(--space-8); }
+            .cli-info, .ai-info { max-width: 100%; }
+        }
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .mobile-toggle { display: block; }
+            .lang-toggle-nav { display: none; }
+            .hero h1 { font-size: 2.2rem; }
+            .how-steps { grid-template-columns: 1fr; gap: var(--space-10); }
+            .how-steps::before { display: none; }
+            .mockup-sidebar { display: none; }
+            .download-card { padding: var(--space-10) var(--space-6); }
+            .download-meta { flex-direction: column; gap: var(--space-2); }
+            .footer-inner { flex-direction: column; gap: var(--space-6); text-align: center; }
+            .footer-links { justify-content: center; }
+        }
+        @media (max-width: 480px) {
+            .hero-actions { flex-direction: column; align-items: stretch; }
+            .btn-primary, .btn-secondary { justify-content: center; }
+            .features-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ============ Mobile Nav ============ */
+        .mobile-nav {
+            display: none; position: fixed; inset: 0; z-index: 200;
+            background: rgba(6, 10, 20, 0.96); backdrop-filter: blur(24px);
+            flex-direction: column; align-items: center; justify-content: center;
+            gap: var(--space-8);
+        }
+        .mobile-nav.open { display: flex; }
+        .mobile-nav a { font-size: 1.5rem; font-weight: 600; color: var(--text-primary); transition: color var(--duration-fast); }
+        .mobile-nav a:hover { color: var(--primary); }
+        .mobile-nav-close { position: absolute; top: var(--space-6); right: var(--space-6); background: none; border: none; color: var(--text-primary); cursor: pointer; }
+        .mobile-nav-close svg { width: 28px; height: 28px; }
+
+        /* ============ Particles ============ */
+        .particle {
+            position: absolute; width: 4px; height: 4px;
+            background: var(--primary); border-radius: 50%;
+            opacity: 0; pointer-events: none;
+            animation: float-particle linear infinite;
+        }
+        @keyframes float-particle {
+            0% { opacity: 0; transform: translateY(0) scale(0); }
+            10% { opacity: 0.5; transform: scale(1); }
+            90% { opacity: 0.5; }
+            100% { opacity: 0; transform: translateY(-100vh) scale(0); }
+        }
+
+        /* ============ Creative: Marquee ticker ============ */
+        .ticker-wrap {
+            position: relative; z-index: 1; overflow: hidden;
+            padding: var(--space-10) 0; border-top: 1px solid rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .ticker {
+            display: flex; gap: var(--space-12); white-space: nowrap;
+            animation: ticker-scroll 30s linear infinite;
+        }
+        .ticker-item {
+            display: inline-flex; align-items: center; gap: var(--space-3);
+            font-size: 0.9rem; color: var(--text-tertiary); font-weight: 500;
+            flex-shrink: 0;
+        }
+        .ticker-item .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--primary); opacity: 0.4; }
+        @keyframes ticker-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+    <div id="particles" style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;"></div>
+
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <div class="nav-inner">
+            <a href="#" class="nav-brand">
+                <div class="nav-logo">E</div>
+                <div class="nav-brand-text">Easy LVR <span>v1.0.1</span></div>
+            </a>
+            <div class="nav-links">
+                <a href="#features" data-i18n="nav_features">Features</a>
+                <a href="#cli" data-i18n="nav_cli">CLI</a>
+                <a href="#ai" data-i18n="nav_ai">AI Integration</a>
+                <a href="#how" data-i18n="nav_how">How It Works</a>
+                <div class="lang-toggle lang-toggle-nav">
+                    <button class="lang-btn active" id="langZh" onclick="switchLang('zh')">中文</button>
+                    <button class="lang-btn" id="langEn" onclick="switchLang('en')">EN</button>
+                </div>
+                <a href="#download" class="nav-cta">
+                    <span data-i18n="nav_download">Download</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </a>
+            </div>
+            <button class="mobile-toggle" id="mobileToggle" aria-label="Open menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Nav -->
+    <div class="mobile-nav" id="mobileNav">
+        <button class="mobile-nav-close" id="mobileClose" aria-label="Close menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <a href="#features" onclick="closeMobileNav()" data-i18n="nav_features">Features</a>
+        <a href="#cli" onclick="closeMobileNav()" data-i18n="nav_cli">CLI</a>
+        <a href="#ai" onclick="closeMobileNav()" data-i18n="nav_ai">AI Integration</a>
+        <a href="#how" onclick="closeMobileNav()" data-i18n="nav_how">How It Works</a>
+        <div class="lang-toggle" style="margin-top:var(--space-4);">
+            <button class="lang-btn active" id="langZhM" onclick="switchLang('zh')">中文</button>
+            <button class="lang-btn" id="langEnM" onclick="switchLang('en')">EN</button>
+        </div>
+        <a href="https://github.com/belief-11/belief-11.github.io/releases/download/v1.0.1/EasyLVR_setup.exe" onclick="closeMobileNav()" data-i18n="nav_download">Download</a>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero" id="hero">
+        <div class="hero-aurora"></div>
+        <div class="hero-deco-line"></div>
+        <div class="hero-deco-line"></div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="hero-badge-dot"></span>
+                    <span data-i18n="hero_badge">v1.0.1 Stable Release</span>
+                </div>
+                <h1>
+                    <span data-i18n="hero_title_1">版本控制，</span><br>
+                    <span class="gradient-text hero-accent" data-i18n="hero_title_2">从未如此简单</span>
+                </h1>
+                <p class="hero-desc" data-i18n="hero_desc">
+                    无需 Git，一键管理项目版本。可视化时间线回滚、差异对比、AI 编码助手集成——专为开发者打造的轻量级本地版本控制工具。
+                </p>
+                <div class="hero-actions">
+                    <a href="https://github.com/belief-11/belief-11.github.io/releases/download/v1.0.1/EasyLVR_setup.exe" class="btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span data-i18n="hero_download">免费下载 Windows 版</span>
+                    </a>
+                    <a href="#features" class="btn-secondary">
+                        <span data-i18n="hero_learn">了解更多</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </a>
+                </div>
+
+                <div class="hero-visual">
+                    <div class="hero-mockup">
+                        <div class="mockup-titlebar">
+                            <div class="mockup-dot mockup-dot-red"></div>
+                            <div class="mockup-dot mockup-dot-yellow"></div>
+                            <div class="mockup-dot mockup-dot-green"></div>
+                            <div class="mockup-title-text" data-i18n="mockup_title">Easy LVR - 本地版本仓库管理</div>
+                        </div>
+                        <div class="mockup-body">
+                            <div class="mockup-sidebar">
+                                <div class="mockup-sidebar-title" data-i18n="mockup_projects">Projects</div>
+                                <div class="mockup-project-item active">
+                                    <svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                    <span data-i18n="mockup_proj1">我的毕设项目</span>
+                                </div>
+                                <div class="mockup-project-item">
+                                    <svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                    <span data-i18n="mockup_proj2">前端练习</span>
+                                </div>
+                                <div class="mockup-project-item">
+                                    <svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                    API Server
+                                </div>
+                            </div>
+                            <div class="mockup-main">
+                                <div class="mockup-toolbar">
+                                    <div class="mockup-commit-btn">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                        <span data-i18n="mockup_commit">提交新版本</span>
+                                    </div>
+                                    <div class="mockup-project-name" data-i18n="mockup_proj1">我的毕设项目</div>
+                                </div>
+                                <div class="mockup-timeline">
+                                    <div class="mockup-timeline-line"></div>
+                                    <div class="mockup-version-card current">
+                                        <div class="mockup-ver-header">
+                                            <div class="mockup-ver-name" data-i18n="mockup_v3">v3 · 当前</div>
+                                            <div class="mockup-ver-time" data-i18n="mockup_v3_time">2 分钟前</div>
+                                        </div>
+                                        <div class="mockup-ver-comment" data-i18n="mockup_v3_comment">修复登录页样式问题</div>
+                                        <div class="mockup-ver-changes">
+                                            <span class="mockup-change mockup-change-add">+2</span>
+                                            <span class="mockup-change mockup-change-mod">~3</span>
+                                        </div>
+                                    </div>
+                                    <div class="mockup-version-card">
+                                        <div class="mockup-ver-header">
+                                            <div class="mockup-ver-name">v2</div>
+                                            <div class="mockup-ver-time" data-i18n="mockup_v2_time">1 小时前</div>
+                                        </div>
+                                        <div class="mockup-ver-comment" data-i18n="mockup_v2_comment">新增用户注册模块</div>
+                                        <div class="mockup-ver-changes">
+                                            <span class="mockup-change mockup-change-add">+12</span>
+                                            <span class="mockup-change mockup-change-mod">~1</span>
+                                        </div>
+                                    </div>
+                                    <div class="mockup-version-card">
+                                        <div class="mockup-ver-header">
+                                            <div class="mockup-ver-name">v1</div>
+                                            <div class="mockup-ver-time" data-i18n="mockup_v1_time">昨天</div>
+                                        </div>
+                                        <div class="mockup-ver-comment" data-i18n="mockup_v1_comment">初始版本提交</div>
+                                        <div class="mockup-ver-changes">
+                                            <span class="mockup-change mockup-change-add">+45</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Creative: Scrolling ticker -->
+    <div class="ticker-wrap">
+        <div class="ticker" id="ticker">
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_1">零配置启动</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_2">增量备份</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_3">原子化回滚</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_4">CLI + GUI</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_5">AI 助手集成</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_6">中英双语</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_7">深色/浅色主题</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_8">纯本地离线</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_9">多项目管理</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_10">代码级差异</span></span>
+            <!-- duplicate for seamless loop -->
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_1">零配置启动</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_2">增量备份</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_3">原子化回滚</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_4">CLI + GUI</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_5">AI 助手集成</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_6">中英双语</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_7">深色/浅色主题</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_8">纯本地离线</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_9">多项目管理</span></span>
+            <span class="ticker-item"><span class="dot"></span><span data-i18n="tick_10">代码级差异</span></span>
+        </div>
+    </div>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="features-header animate-on-scroll">
+                <div class="section-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <span data-i18n="feat_label">核心功能</span>
+                </div>
+                <h2 class="section-title"><span data-i18n="feat_title_1">为开发者量身打造的</span><span class="gradient-text" data-i18n="feat_title_2">版本管理体验</span></h2>
+                <p class="section-desc" data-i18n="feat_desc">无需学习 Git 命令，无需远程仓库，一键创建版本快照，随时回滚到任意历史状态。</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon snapshot">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </div>
+                    <h3 data-i18n="feat_snap_title">一键快照</h3>
+                    <p data-i18n="feat_snap_desc">点击即保存当前项目的完整状态，增量备份节省磁盘空间。支持添加版本备注，快速定位目标版本。</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon timeline">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <h3 data-i18n="feat_timeline_title">时间线回滚</h3>
+                    <p data-i18n="feat_timeline_desc">可视化版本时间线，精确回滚到任意版本。原子化回滚机制确保安全，失败时自动恢复。</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon diff">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22V8"/><path d="M21 3l-9 9"/><path d="M3 3l9 9"/></svg>
+                    </div>
+                    <h3 data-i18n="feat_diff_title">差异对比</h3>
+                    <p data-i18n="feat_diff_desc">文件级差异概览，代码级行差异高亮。新增（绿）、修改（橙）、删除（红）一目了然。</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon multi">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    </div>
+                    <h3 data-i18n="feat_multi_title">多项目管理</h3>
+                    <p data-i18n="feat_multi_desc">统一管理多个项目，每个项目拥有独立版本仓库，互不干扰。搜索、切换，一气呵成。</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon cli">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                    </div>
+                    <h3 data-i18n="feat_cli_title">CLI 命令行</h3>
+                    <p data-i18n="feat_cli_desc">附带 vcsnap CLI 工具，支持终端操作与 JSON 输出。脚本化批量管理，无缝集成你的工作流。</p>
+                </div>
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon ai">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93"/><path d="M8.56 6.22A4 4 0 0 1 12 2"/><path d="M15 12a3 3 0 0 0-3-3"/><path d="M9 12a3 3 0 0 0 3 3"/><path d="M12 22v-7"/><circle cx="12" cy="5" r="3"/><path d="M5 12h14"/></svg>
+                    </div>
+                    <h3 data-i18n="feat_ai_title">AI 助手集成</h3>
+                    <p data-i18n="feat_ai_desc">一键导出 Agent Skill 文件，让 Cursor、Claude Code 等 AI 编码助手自动遵守你的版本管理规则。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CLI -->
+    <section class="cli-section" id="cli">
+        <div class="container">
+            <div class="cli-grid">
+                <div class="cli-info animate-on-scroll">
+                    <div class="section-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                        <span data-i18n="cli_label">命令行工具</span>
+                    </div>
+                    <h2 class="section-title">vcsnap CLI<br><span class="gradient-text" data-i18n="cli_title">终端即掌控</span></h2>
+                    <p class="section-desc" style="margin-bottom: var(--space-8);" data-i18n="cli_desc">
+                        无需打开 GUI，在终端中直接管理版本。支持 <code class="mono" style="color:var(--primary);background:var(--primary-subtle);padding:2px 6px;border-radius:4px;font-size:0.85em;">--json</code> 输出，方便脚本与 AI 工具集成。
+                    </p>
+                    <div style="display:flex;flex-direction:column;gap:var(--space-4);">
+                        <div style="display:flex;align-items:center;gap:var(--space-3);">
+                            <div style="width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;"></div>
+                            <span style="font-size:0.95rem;color:var(--text-secondary);" data-i18n="cli_point_1">8 个核心命令覆盖完整工作流</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:var(--space-3);">
+                            <div style="width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;"></div>
+                            <span style="font-size:0.95rem;color:var(--text-secondary);" data-i18n="cli_point_2">结构化 JSON 输出，方便自动化</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:var(--space-3);">
+                            <div style="width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;"></div>
+                            <span style="font-size:0.95rem;color:var(--text-secondary);" data-i18n="cli_point_3">CLI 操作实时同步 GUI 界面</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="cli-terminal animate-on-scroll">
+                    <div class="cli-terminal-bar">
+                        <div class="mockup-dot mockup-dot-red" style="width:10px;height:10px;"></div>
+                        <div class="mockup-dot mockup-dot-yellow" style="width:10px;height:10px;"></div>
+                        <div class="mockup-dot mockup-dot-green" style="width:10px;height:10px;"></div>
+                        <div class="cli-terminal-title">PowerShell</div>
+                    </div>
+                    <div class="cli-terminal-body" id="cliTerminal">
+                        <span class="cli-line"><span class="cli-prompt">PS&gt; </span><span class="cli-cmd">vcsnap</span> <span class="cli-flag">status</span></span>
+                        <span class="cli-line"><span class="cli-output">  </span><span class="cli-success">&#10003; 3 files changed</span><span class="cli-output"> (+2 added, ~1 modified)</span></span>
+                        <span class="cli-line">&nbsp;</span>
+                        <span class="cli-line"><span class="cli-prompt">PS&gt; </span><span class="cli-cmd">vcsnap</span> <span class="cli-flag">commit -m</span> <span style="color:#a78bfa">"fix login style"</span></span>
+                        <span class="cli-line"><span class="cli-output">  </span><span class="cli-success">&#10003; Version v4 created</span><span class="cli-output"> (3 files, 12KB)</span></span>
+                        <span class="cli-line">&nbsp;</span>
+                        <span class="cli-line"><span class="cli-prompt">PS&gt; </span><span class="cli-cmd">vcsnap</span> <span class="cli-flag">--json</span> <span class="cli-cmd">log</span></span>
+                        <span class="cli-line"><span class="cli-output">  { </span><span class="cli-key">"id"</span><span class="cli-output">: </span><span class="cli-value">4</span><span class="cli-output">, </span><span class="cli-key">"comment"</span><span class="cli-output">: </span><span style="color:#a78bfa">"fix login style"</span><span class="cli-output">, </span><span class="cli-key">"files"</span><span class="cli-output">: </span><span class="cli-value">3</span><span class="cli-output"> }</span></span>
+                        <span class="cli-line">&nbsp;</span>
+                        <span class="cli-line"><span class="cli-prompt">PS&gt; </span><span class="cli-cmd">vcsnap</span> <span class="cli-flag">rollback</span> <span style="color:#a78bfa">latest</span></span>
+                        <span class="cli-line"><span class="cli-output">  </span><span class="cli-success">&#10003; Rolled back to v3</span><span class="cli-output"> (3 items restored)</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI -->
+    <section class="ai-section" id="ai">
+        <div class="container">
+            <div class="ai-grid">
+                <div class="ai-visual animate-on-scroll">
+                    <div class="ai-card">
+                        <div class="ai-card-inner">
+                            <div class="ai-card-header">
+                                <div class="ai-card-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93"/><path d="M8.56 6.22A4 4 0 0 1 12 2"/><path d="M15 12a3 3 0 0 0-3-3"/><path d="M9 12a3 3 0 0 0 3 3"/><path d="M12 22v-7"/><circle cx="12" cy="5" r="3"/></svg>
+                                </div>
+                                <div class="ai-card-title">Agent Skill File</div>
+                                <div class="ai-card-badge">v1.0.1</div>
+                            </div>
+                            <div style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;line-height:1.9;color:var(--text-secondary);">
+                                <div><span style="color:var(--text-tertiary)">---</span></div>
+                                <div><span style="color:var(--primary)">name</span><span style="color:var(--text-tertiary)">:</span> easy-lvr-version-control</div>
+                                <div><span style="color:var(--primary)">version</span><span style="color:var(--text-tertiary)">:</span> <span style="color:var(--warning)">1.0.1</span></div>
+                                <div><span style="color:var(--primary)">trigger</span><span style="color:var(--text-tertiary)">:</span> <span style="color:var(--success)">MANDATORY</span></div>
+                                <div style="margin-top:8px;"><span style="color:var(--text-tertiary)">## Rules</span></div>
+                                <div><span style="color:var(--warning)">1.</span> MUST commit before destructive ops</div>
+                                <div><span style="color:var(--warning)">2.</span> Use vcsnap for version control</div>
+                                <div><span style="color:var(--warning)">3.</span> Check vcsnap status before changes</div>
+                                <div style="color:var(--text-tertiary);margin-top:4px;">  ...</div>
+                            </div>
+                            <div class="ai-integrations">
+                                <div class="ai-integration-tag"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Cursor</div>
+                                <div class="ai-integration-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>Claude Code</div>
+                                <div class="ai-integration-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Windsurf</div>
+                                <div class="ai-integration-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Codex CLI</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ai-info animate-on-scroll">
+                    <div class="section-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93"/><path d="M8.56 6.22A4 4 0 0 1 12 2"/></svg>
+                        <span data-i18n="ai_label">AI 生态集成</span>
+                    </div>
+                    <h2 class="section-title"><span data-i18n="ai_title_1">让 AI 助手</span><br><span class="gradient-text" data-i18n="ai_title_2">自动管理版本</span></h2>
+                    <p class="section-desc" style="margin-bottom: var(--space-8);" data-i18n="ai_desc">
+                        一键导出 Agent Skill 文件，配置到 Cursor、Claude Code 等 AI 编码助手后，它们会在修改代码前自动创建版本快照、在关键操作时回滚保护——版本控制从「手动」变成「自动」。
+                    </p>
+                    <div style="display:flex;flex-direction:column;gap:var(--space-4);">
+                        <div style="display:flex;align-items:flex-start;gap:var(--space-3);">
+                            <div style="width:24px;height:24px;background:var(--primary-subtle);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:0.95rem;margin-bottom:2px;" data-i18n="ai_point1_title">零配置自动生效</div>
+                                <div style="font-size:0.85rem;color:var(--text-secondary);" data-i18n="ai_point1_desc">导出 Skill 文件 → 配置到 AI 助手 → 立即生效</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:flex-start;gap:var(--space-3);">
+                            <div style="width:24px;height:24px;background:var(--primary-subtle);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:0.95rem;margin-bottom:2px;" data-i18n="ai_point2_title">MANDATORY 触发条件</div>
+                                <div style="font-size:0.85rem;color:var(--text-secondary);" data-i18n="ai_point2_desc">AI 助手在涉及文件修改时强制执行版本保护</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:flex-start;gap:var(--space-3);">
+                            <div style="width:24px;height:24px;background:var(--primary-subtle);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:0.95rem;margin-bottom:2px;" data-i18n="ai_point3_title">兼容主流 Vibe Coding 工具</div>
+                                <div style="font-size:0.85rem;color:var(--text-secondary);" data-i18n="ai_point3_desc">Cursor、Claude Code、Windsurf、OpenAI Codex CLI 等</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How -->
+    <section class="how-section" id="how">
+        <div class="container">
+            <div class="how-header animate-on-scroll">
+                <div class="section-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span data-i18n="how_label">快速上手</span>
+                </div>
+                <h2 class="section-title"><span data-i18n="how_title_1">三步开始</span><span class="gradient-text" data-i18n="how_title_2">版本管理</span></h2>
+                <p class="section-desc" data-i18n="how_desc">从安装到第一个版本快照，只需三步。</p>
+            </div>
+            <div class="how-steps">
+                <div class="how-step animate-on-scroll">
+                    <div class="how-step-number">1</div>
+                    <h3 data-i18n="how_step1_title">安装 & 添加项目</h3>
+                    <p data-i18n="how_step1_desc">下载安装包，打开应用后点击「添加项目」，选择你的项目文件夹。</p>
+                </div>
+                <div class="how-step animate-on-scroll">
+                    <div class="how-step-number">2</div>
+                    <h3 data-i18n="how_step2_title">创建版本快照</h3>
+                    <p data-i18n="how_step2_desc">点击「提交新版本」按钮，添加版本备注，即可保存当前项目完整状态。</p>
+                </div>
+                <div class="how-step animate-on-scroll">
+                    <div class="how-step-number">3</div>
+                    <h3 data-i18n="how_step3_title">随时回滚恢复</h3>
+                    <p data-i18n="how_step3_desc">在版本时间线中选择任意版本，一键回滚。安全的原子化机制确保万无一失。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download -->
+    <section class="download-section" id="download">
+        <div class="container">
+            <div class="download-card animate-on-scroll">
+                <div class="section-label" style="margin-bottom:var(--space-8);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span data-i18n="dl_label">免费下载</span>
+                </div>
+                <h2><span data-i18n="dl_title_1">准备好掌控你的</span><span class="gradient-text" data-i18n="dl_title_2">项目版本</span><span data-i18n="dl_title_3">了吗？</span></h2>
+                <p data-i18n="dl_desc">完全免费、开源，纯本地离线运行，不收集任何数据。Windows 一键安装，即刻开始。</p>
+                <a href="https://github.com/belief-11/belief-11.github.io/releases/download/v1.0.1/EasyLVR_setup.exe" class="download-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span data-i18n="dl_btn">下载 Windows 安装包</span>
+                </a>
+                <div class="download-meta">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Windows 10/11</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>~48 MB</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span data-i18n="dl_offline">离线运行 · 无需联网</span></span>
+                    <span>v1.0.1</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <div class="nav-logo" style="width:28px;height:28px;font-size:0.8rem;">E</div>
+                <div class="footer-brand-text">Easy LVR</div>
+            </div>
+            <div class="footer-links">
+                <a href="#features" data-i18n="nav_features">Features</a>
+                <a href="#cli" data-i18n="nav_cli">CLI</a>
+                <a href="#ai" data-i18n="nav_ai">AI Integration</a>
+            </div>
+        </div>
+        <div class="container">
+            <div class="footer-copy">&copy; 2026 Easy LVR. Built with &#10084; for developers who value simplicity.</div>
+        </div>
+    </footer>
+
+    <script>
+    // ============================================================
+    // i18n System
+    // ============================================================
+    const i18n = {
+        zh: {
+            nav_features: "功能特性", nav_cli: "命令行", nav_ai: "AI 集成",
+            nav_how: "快速上手", nav_download: "下载",
+            hero_badge: "v1.0.1 稳定版发布",
+            hero_title_1: "版本控制，", hero_title_2: "从未如此简单",
+            hero_desc: "无需 Git，一键管理项目版本。可视化时间线回滚、差异对比、AI 编码助手集成——专为开发者打造的轻量级本地版本控制工具。",
+            hero_download: "免费下载 Windows 版", hero_learn: "了解更多",
+            mockup_title: "Easy LVR - 本地版本仓库管理",
+            mockup_projects: "项目列表", mockup_proj1: "我的毕设项目", mockup_proj2: "前端练习",
+            mockup_commit: "提交新版本",
+            mockup_v3: "v3 · 当前", mockup_v3_time: "2 分钟前", mockup_v3_comment: "修复登录页样式问题",
+            mockup_v2_time: "1 小时前", mockup_v2_comment: "新增用户注册模块",
+            mockup_v1_time: "昨天", mockup_v1_comment: "初始版本提交",
+            tick_1: "零配置启动", tick_2: "增量备份", tick_3: "原子化回滚",
+            tick_4: "CLI + GUI", tick_5: "AI 助手集成", tick_6: "中英双语",
+            tick_7: "深色/浅色主题", tick_8: "纯本地离线", tick_9: "多项目管理", tick_10: "代码级差异",
+            feat_label: "核心功能",
+            feat_title_1: "为开发者量身打造的", feat_title_2: "版本管理体验",
+            feat_desc: "无需学习 Git 命令，无需远程仓库，一键创建版本快照，随时回滚到任意历史状态。",
+            feat_snap_title: "一键快照", feat_snap_desc: "点击即保存当前项目的完整状态，增量备份节省磁盘空间。支持添加版本备注，快速定位目标版本。",
+            feat_timeline_title: "时间线回滚", feat_timeline_desc: "可视化版本时间线，精确回滚到任意版本。原子化回滚机制确保安全，失败时自动恢复。",
+            feat_diff_title: "差异对比", feat_diff_desc: "文件级差异概览，代码级行差异高亮。新增（绿）、修改（橙）、删除（红）一目了然。",
+            feat_multi_title: "多项目管理", feat_multi_desc: "统一管理多个项目，每个项目拥有独立版本仓库，互不干扰。搜索、切换，一气呵成。",
+            feat_cli_title: "CLI 命令行", feat_cli_desc: "附带 vcsnap CLI 工具，支持终端操作与 JSON 输出。脚本化批量管理，无缝集成你的工作流。",
+            feat_ai_title: "AI 助手集成", feat_ai_desc: "一键导出 Agent Skill 文件，让 Cursor、Claude Code 等 AI 编码助手自动遵守你的版本管理规则。",
+            cli_label: "命令行工具", cli_title: "终端即掌控",
+            cli_desc: '无需打开 GUI，在终端中直接管理版本。支持 --json 输出，方便脚本与 AI 工具集成。',
+            cli_point_1: "8 个核心命令覆盖完整工作流", cli_point_2: "结构化 JSON 输出，方便自动化",
+            cli_point_3: "CLI 操作实时同步 GUI 界面",
+            ai_label: "AI 生态集成", ai_title_1: "让 AI 助手", ai_title_2: "自动管理版本",
+            ai_desc: "一键导出 Agent Skill 文件，配置到 Cursor、Claude Code 等 AI 编码助手后，它们会在修改代码前自动创建版本快照、在关键操作时回滚保护——版本控制从「手动」变成「自动」。",
+            ai_point1_title: "零配置自动生效", ai_point1_desc: "导出 Skill 文件 → 配置到 AI 助手 → 立即生效",
+            ai_point2_title: "MANDATORY 触发条件", ai_point2_desc: "AI 助手在涉及文件修改时强制执行版本保护",
+            ai_point3_title: "兼容主流 Vibe Coding 工具", ai_point3_desc: "Cursor、Claude Code、Windsurf、OpenAI Codex CLI 等",
+            how_label: "快速上手", how_title_1: "三步开始", how_title_2: "版本管理",
+            how_desc: "从安装到第一个版本快照，只需三步。",
+            how_step1_title: "安装 & 添加项目", how_step1_desc: "下载安装包，打开应用后点击「添加项目」，选择你的项目文件夹。",
+            how_step2_title: "创建版本快照", how_step2_desc: "点击「提交新版本」按钮，添加版本备注，即可保存当前项目完整状态。",
+            how_step3_title: "随时回滚恢复", how_step3_desc: "在版本时间线中选择任意版本，一键回滚。安全的原子化机制确保万无一失。",
+            dl_label: "免费下载", dl_title_1: "准备好掌控你的", dl_title_2: "项目版本", dl_title_3: "了吗？",
+            dl_desc: "完全免费、开源，纯本地离线运行，不收集任何数据。Windows 一键安装，即刻开始。",
+            dl_btn: "下载 Windows 安装包", dl_offline: "离线运行 · 无需联网",
+        },
+        en: {
+            nav_features: "Features", nav_cli: "CLI", nav_ai: "AI Integration",
+            nav_how: "How It Works", nav_download: "Download",
+            hero_badge: "v1.0.1 Stable Release",
+            hero_title_1: "Version Control,", hero_title_2: "Made Effortless",
+            hero_desc: "No Git needed. One-click project version management. Visual timeline rollback, diff comparison, AI coding assistant integration — the lightweight local version control tool built for developers.",
+            hero_download: "Download for Windows", hero_learn: "Learn More",
+            mockup_title: "Easy LVR - Local Version Manager",
+            mockup_projects: "Projects", mockup_proj1: "My Thesis", mockup_proj2: "Frontend Practice",
+            mockup_commit: "Commit",
+            mockup_v3: "v3 · Current", mockup_v3_time: "2 min ago", mockup_v3_comment: "Fix login page styles",
+            mockup_v2_time: "1 hour ago", mockup_v2_comment: "Add user registration module",
+            mockup_v1_time: "Yesterday", mockup_v1_comment: "Initial commit",
+            tick_1: "Zero Config", tick_2: "Incremental Backup", tick_3: "Atomic Rollback",
+            tick_4: "CLI + GUI", tick_5: "AI Integration", tick_6: "Bilingual",
+            tick_7: "Dark/Light Theme", tick_8: "Fully Offline", tick_9: "Multi-Project", tick_10: "Code-Level Diff",
+            feat_label: "Core Features",
+            feat_title_1: "Version Management", feat_title_2: "Crafted for Developers",
+            feat_desc: "No Git commands to learn, no remote repos needed. Create version snapshots with one click, roll back to any point in history anytime.",
+            feat_snap_title: "Instant Snapshots", feat_snap_desc: "Save your project's complete state with a single click. Incremental backups save disk space. Add version notes for quick identification.",
+            feat_timeline_title: "Timeline Rollback", feat_timeline_desc: "Visual version timeline for precise rollback to any version. Atomic rollback mechanism ensures safety — auto-restore on failure.",
+            feat_diff_title: "Diff Comparison", feat_diff_desc: "File-level diff overview with code-level line highlighting. Added (green), Modified (orange), Deleted (red) — clear at a glance.",
+            feat_multi_title: "Multi-Project", feat_multi_desc: "Manage multiple projects in one place. Each project has its own independent repository. Search and switch seamlessly.",
+            feat_cli_title: "CLI Tool", feat_cli_desc: "Includes vcsnap CLI for terminal operations with JSON output. Script-friendly batch management, seamlessly integrated into your workflow.",
+            feat_ai_title: "AI Integration", feat_ai_desc: "Export Agent Skill file with one click. Let Cursor, Claude Code and other AI coding assistants automatically follow your version control rules.",
+            cli_label: "CLI Tool", cli_title: "Control from Terminal",
+            cli_desc: "Manage versions directly from the terminal without opening the GUI. Supports --json output for scripts and AI tool integration.",
+            cli_point_1: "8 core commands cover the full workflow", cli_point_2: "Structured JSON output for automation",
+            cli_point_3: "CLI actions sync with GUI in real-time",
+            ai_label: "AI Ecosystem", ai_title_1: "Let AI Assistants", ai_title_2: "Manage Versions Auto",
+            ai_desc: "Export an Agent Skill file, configure it in Cursor, Claude Code, or other AI assistants, and they'll automatically create version snapshots before code changes and apply rollback protection — version control goes from manual to automatic.",
+            ai_point1_title: "Zero Config, Instant Effect", ai_point1_desc: "Export Skill file → Configure in AI assistant → Takes effect immediately",
+            ai_point2_title: "MANDATORY Triggers", ai_point2_desc: "AI assistants enforce version protection on file modifications",
+            ai_point3_title: "Compatible with Vibe Coding Tools", ai_point3_desc: "Cursor, Claude Code, Windsurf, OpenAI Codex CLI, and more",
+            how_label: "Quick Start", how_title_1: "Three Steps to", how_title_2: "Version Control",
+            how_desc: "From installation to your first version snapshot in just three steps.",
+            how_step1_title: "Install & Add Project", how_step1_desc: "Download the installer, open the app, click \"Add Project\" and select your project folder.",
+            how_step2_title: "Create Version Snapshot", how_step2_desc: "Click the \"Commit\" button, add a version note, and save your project's complete state.",
+            how_step3_title: "Rollback Anytime", how_step3_desc: "Select any version in the timeline and rollback with one click. Safe atomic mechanism ensures success.",
+            dl_label: "Free Download", dl_title_1: "Ready to Take Control of Your ", dl_title_2: "Project Versions", dl_title_3: "?",
+            dl_desc: "Completely free and open source. Runs fully offline, collects zero data. One-click Windows install, start instantly.",
+            dl_btn: "Download Windows Installer", dl_offline: "Offline · No Internet Needed",
+        }
+    };
+
+    let currentLang = localStorage.getItem('easylvr-lang') || 'zh';
+
+    function switchLang(lang) {
+        currentLang = lang;
+        localStorage.setItem('easylvr-lang', lang);
+        applyLang();
+    }
+
+    function applyLang() {
+        // Update all data-i18n elements
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (i18n[currentLang] && i18n[currentLang][key]) {
+                el.textContent = i18n[currentLang][key];
+            }
+        });
+        // Update html lang attribute
+        document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+        // Update page title
+        document.title = currentLang === 'zh' ? 'Easy LVR - 便捷版本控制工具' : 'Easy LVR - Effortless Version Control';
+        // Update active lang button
+        document.querySelectorAll('#langZh, #langZhM').forEach(b => b.classList.toggle('active', currentLang === 'zh'));
+        document.querySelectorAll('#langEn, #langEnM').forEach(b => b.classList.toggle('active', currentLang === 'en'));
+    }
+
+    // ============================================================
+    // Navigation scroll effect
+    // ============================================================
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    // ============================================================
+    // Mobile menu
+    // ============================================================
+    const mobileToggle = document.getElementById('mobileToggle');
+    const mobileNav = document.getElementById('mobileNav');
+    const mobileClose = document.getElementById('mobileClose');
+    mobileToggle.addEventListener('click', () => mobileNav.classList.add('open'));
+    mobileClose.addEventListener('click', () => mobileNav.classList.remove('open'));
+    function closeMobileNav() { mobileNav.classList.remove('open'); }
+
+    // ============================================================
+    // Scroll animations
+    // ============================================================
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                const delay = entry.target.closest('.features-grid, .how-steps')
+                    ? Array.from(entry.target.parentElement.children).indexOf(entry.target) * 100 : 0;
+                setTimeout(() => entry.target.classList.add('visible'), delay);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+    document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+
+    // ============================================================
+    // Floating particles
+    // ============================================================
+    const particlesContainer = document.getElementById('particles');
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!prefersReducedMotion) {
+        function createParticle() {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.bottom = '-10px';
+            p.style.animationDuration = (8 + Math.random() * 12) + 's';
+            p.style.animationDelay = Math.random() * 5 + 's';
+            p.style.width = p.style.height = (2 + Math.random() * 3) + 'px';
+            const colors = ['var(--primary)', '#a78bfa', 'var(--primary-light)', 'var(--success)'];
+            p.style.background = colors[Math.floor(Math.random() * colors.length)];
+            particlesContainer.appendChild(p);
+            setTimeout(() => { if (p.parentNode) p.parentNode.removeChild(p); }, 25000);
+        }
+        for (let i = 0; i < 12; i++) setTimeout(createParticle, i * 800);
+        setInterval(createParticle, 3000);
+    }
+
+    // ============================================================
+    // CLI terminal re-trigger
+    // ============================================================
+    const cliTerminal = document.getElementById('cliTerminal');
+    let cliAnimated = false;
+    const cliObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !cliAnimated) {
+                cliAnimated = true;
+                cliTerminal.querySelectorAll('.cli-line').forEach(line => {
+                    line.style.animation = 'none'; line.offsetHeight; line.style.animation = '';
+                });
+            }
+        });
+    }, { threshold: 0.3 });
+    cliObserver.observe(cliTerminal);
+
+    // ============================================================
+    // Smooth scroll
+    // ============================================================
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    // ============================================================
+    // Apply saved language on load
+    // ============================================================
+    applyLang();
+    </script>
+</body>
+</html>
