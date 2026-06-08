@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Easy LVR - 便捷版本控制工具</title>
-    <meta name="description" content="轻量化本地版本控制，无需 Git，一键管理项目版本。支持时间线回滚、差异对比、AI 编码助手集成。">
-    <meta name="keywords" content="版本控制,版本管理,本地备份,回滚,diff,CLI,AI集成,vcsnap">
-    <meta property="og:title" content="Easy LVR - 便捷版本控制工具">
-    <meta property="og:description" content="轻量化本地版本控制，无需 Git，一键管理项目版本。">
+    
+    <!-- SEO 优化（已自动填写你的官网信息） -->
+    <title>Easy LVR - 便捷本地版本控制工具</title>
+    <meta name="description" content="Easy LVR 是轻量化本地版本管理工具，无需 Git，一键快照、时间线回滚、差异对比、AI 助手集成，专为开发者打造。">
+    <meta name="keywords" content="Easy LVR,版本控制,本地版本管理,版本回滚,项目快照,AI 集成,vcsnap,belief-11">
+    <meta name="robots" content="index,follow">
+    <meta property="og:title" content="Easy LVR - 便捷本地版本控制工具">
+    <meta property="og:description" content="无需 Git，一键管理项目版本。可视化时间线、差异对比、AI 助手集成。">
     <meta property="og:type" content="website">
+    <meta property="og:url" content="https://belief-11.github.io/package/">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
@@ -348,7 +353,7 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
             transition: left 0.6s var(--ease-out);
         }
-        .btn-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(74,158,199,0.3); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(74,158,199,0.08); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(74, 158, 199, 0.3); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(74,158,199,0.08); }
         .btn-secondary:hover::before { left: 100%; }
         .btn-secondary svg { width: 18px; height: 18px; flex-shrink: 0; position: relative; z-index: 1; }
         .btn-secondary span { position: relative; z-index: 1; }
@@ -842,7 +847,7 @@
                     </a>
                     <a href="#features" class="btn-secondary">
                         <span data-i18n="hero_learn">了解更多</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                     </a>
                 </div>
 
@@ -1311,33 +1316,23 @@
     }
 
     function applyLang() {
-        // Update all data-i18n elements
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (i18n[currentLang] && i18n[currentLang][key]) {
                 el.textContent = i18n[currentLang][key];
             }
         });
-        // Update html lang attribute
-        document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
-        // Update page title
+        document.document.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
         document.title = currentLang === 'zh' ? 'Easy LVR - 便捷版本控制工具' : 'Easy LVR - Effortless Version Control';
-        // Update active lang button
         document.querySelectorAll('#langZh, #langZhM').forEach(b => b.classList.toggle('active', currentLang === 'zh'));
         document.querySelectorAll('#langEn, #langEnM').forEach(b => b.classList.toggle('active', currentLang === 'en'));
     }
 
-    // ============================================================
-    // Navigation scroll effect
-    // ============================================================
     const nav = document.getElementById('nav');
     window.addEventListener('scroll', () => {
         nav.classList.toggle('scrolled', window.scrollY > 50);
     });
 
-    // ============================================================
-    // Mobile menu
-    // ============================================================
     const mobileToggle = document.getElementById('mobileToggle');
     const mobileNav = document.getElementById('mobileNav');
     const mobileClose = document.getElementById('mobileClose');
@@ -1345,9 +1340,6 @@
     mobileClose.addEventListener('click', () => mobileNav.classList.remove('open'));
     function closeMobileNav() { mobileNav.classList.remove('open'); }
 
-    // ============================================================
-    // Scroll animations
-    // ============================================================
     const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
             if (entry.isIntersecting) {
@@ -1360,9 +1352,6 @@
     }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
     document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
 
-    // ============================================================
-    // Floating particles
-    // ============================================================
     const particlesContainer = document.getElementById('particles');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!prefersReducedMotion) {
@@ -1383,9 +1372,6 @@
         setInterval(createParticle, 3000);
     }
 
-    // ============================================================
-    // CLI terminal re-trigger
-    // ============================================================
     const cliTerminal = document.getElementById('cliTerminal');
     let cliAnimated = false;
     const cliObserver = new IntersectionObserver((entries) => {
@@ -1400,9 +1386,6 @@
     }, { threshold: 0.3 });
     cliObserver.observe(cliTerminal);
 
-    // ============================================================
-    // Smooth scroll
-    // ============================================================
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(e) {
             e.preventDefault();
@@ -1411,9 +1394,6 @@
         });
     });
 
-    // ============================================================
-    // Apply saved language on load
-    // ============================================================
     applyLang();
     </script>
 </body>
