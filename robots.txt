@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://belief-11.github.io/package/sitemap.xml
